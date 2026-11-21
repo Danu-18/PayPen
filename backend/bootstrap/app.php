@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'verified.api' => \App\Http\Middleware\EnsureEmailVerifiedApi::class,
+            'idempotent' => \App\Http\Middleware\IdempotencyMiddleware::class,
+            'admin' => \App\Http\Middleware\EnsureAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

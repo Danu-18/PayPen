@@ -85,7 +85,7 @@ export default function RegisterPage() {
         })
       );
       toast.success('Registration successful! Please verify your email.');
-      router.replace('/verify-email');
+      window.location.href = '/verify-email';
     } catch (err: unknown) {
       const apiErr = err as { data?: { message?: string; errors?: Record<string, string[]> } };
       if (apiErr.data?.errors) {

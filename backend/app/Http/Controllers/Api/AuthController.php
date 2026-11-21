@@ -3,18 +3,24 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Resources\UserResource;
 use App\Http\Resources\WalletResource;
 use App\Models\User;
 use App\Services\AuditLogService;
+use Carbon\Carbon;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -208,6 +214,109 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Verification link sent to your registered email address.',
+        ]);
+    }
+
+    /**
+     * Send password reset link to user email.
+     */
+    public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
+    {
+        $email = strtolower(trim($request->input('email')));
+        $user = User::where('email', $email)->first();
+
+        if ($user) {
+            $token = Str::random(64);
+
+            DB::table('password_reset_tokens')->updateOrInsert(
+                ['email' => $email],
+                [
+                    'token' => Hash::make($token),
+                    'created_at' => now(),
+                ]
+            );
+
+            $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
+            $resetUrl = "{$frontendUrl}/reset-password?token={$token}&email=" . urlencode($email);
+
+            try {
+                Mail::raw(
+                    "Hello {$user->name},\n\nYou requested a password reset for your PayPen account.\nClick the link below to set a new password (valid for 15 minutes):\n{$resetUrl}\n\nIf you did not request this, please ignore this email.",
+                    function ($message) use ($user) {
+                        $message->to($user->email)->subject('Reset Your PayPen Password');
+                    }
+                );
+            } catch (\Throwable $e) {
+                // If mail service fails, log error but continue gracefully
+                \Illuminate\Support\Facades\Log::error("Failed sending reset email: " . $e->getMessage());
+            }
+
+            AuditLogService::record(
+                action: 'password_reset_requested',
+                actorUserId: $user->id,
+                targetType: User::class,
+                targetId: $user->id
+            );
+        }
+
+        return response()->json([
+            'message' => 'If your email is registered with PayPen, you will receive a password reset link shortly.',
+        ]);
+    }
+
+    /**
+     * Reset account password with token.
+     */
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        $email = strtolower(trim($validated['email']));
+        $token = (string) $validated['token'];
+
+        $record = DB::table('password_reset_tokens')->where('email', $email)->first();
+
+        if (! $record || ! Hash::check($token, $record->token)) {
+            return response()->json([
+                'message' => 'Invalid password reset token or email address.',
+                'code' => 'INVALID_RESET_TOKEN',
+            ], 400);
+        }
+
+        // Strict 15-minute token expiry
+        $createdAt = Carbon::parse($record->created_at);
+        if ($createdAt->addMinutes(15)->isPast()) {
+            DB::table('password_reset_tokens')->where('email', $email)->delete();
+
+            return response()->json([
+                'message' => 'The password reset token has expired (15-minute validity limit). Please request a new one.',
+                'code' => 'EXPIRED_RESET_TOKEN',
+            ], 400);
+        }
+
+        $user = User::where('email', $email)->first();
+        if (! $user) {
+            return response()->json([
+                'message' => 'User not found.',
+                'code' => 'USER_NOT_FOUND',
+            ], 404);
+        }
+
+        $user->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        // Consume and delete token
+        DB::table('password_reset_tokens')->where('email', $email)->delete();
+
+        AuditLogService::record(
+            action: 'password_reset_completed',
+            actorUserId: $user->id,
+            targetType: User::class,
+            targetId: $user->id
+        );
+
+        return response()->json([
+            'message' => 'Your password has been reset successfully. You may now log in with your new password.',
         ]);
     }
 }

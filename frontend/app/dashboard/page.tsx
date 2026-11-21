@@ -2,11 +2,13 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/src/redux/hooks';
 import { useGetProfileQuery } from '@/src/redux/api/profileApi';
 import { updateUser } from '@/src/redux/slices/authSlice';
 import { AuthGuard } from '@/src/components/auth/AuthGuard';
 import { AppShell } from '@/src/components/layout/AppShell';
+import { TransactionTable } from '@/src/components/transactions/TransactionTable';
 import { Button } from '@/src/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/src/components/ui/Card';
 import { Badge } from '@/src/components/ui/Badge';
@@ -29,6 +31,7 @@ import {
 import { toast } from 'sonner';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const { user, wallet, token } = useAppSelector((state) => state.auth);
   const { data: profileData, refetch } = useGetProfileQuery(undefined, {
@@ -64,22 +67,25 @@ export default function DashboardPage() {
       id: 'deposit',
       title: 'Add Money',
       subtitle: 'Bank deposit & balance top-up',
+      href: '/deposit',
       icon: ArrowDownToLine,
       color: 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100/80',
-      badge: 'Sprint 2',
+      badge: 'Live',
     },
     {
       id: 'send',
       title: 'Send Money',
-      subtitle: 'Instant P2P transfer by Wallet ID',
+      subtitle: 'Instant P2P transfer by email',
+      href: '/send',
       icon: Send,
       color: 'bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100/80',
-      badge: 'Sprint 2',
+      badge: 'Live',
     },
     {
       id: 'bills',
       title: 'Pay Bills',
       subtitle: 'Electricity, Gas, Internet & Mobile',
+      href: '/bills',
       icon: Receipt,
       color: 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100/80',
       badge: 'Sprint 2',
@@ -88,6 +94,7 @@ export default function DashboardPage() {
       id: 'requests',
       title: 'Request Money',
       subtitle: 'Create & manage payment requests',
+      href: '/requests',
       icon: HandCoins,
       color: 'bg-violet-50 text-violet-600 border-violet-200 hover:bg-violet-100/80',
       badge: 'Sprint 3',
@@ -233,7 +240,7 @@ export default function DashboardPage() {
                 return (
                   <button
                     key={action.id}
-                    onClick={() => setModalAction(action.id)}
+                    onClick={() => router.push(action.href)}
                     className="flex flex-col items-start p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all duration-150 text-left cursor-pointer group"
                   >
                     <div className="flex items-center justify-between w-full mb-3">
@@ -254,75 +261,21 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Recent Activity Section */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <History className="w-5 h-5 text-slate-500" />
-                  <span>Recent Ledger Activity</span>
-                </CardTitle>
-                <CardDescription>
-                  Real-time transaction entries recorded on your double-entry ledger
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <EmptyState
-                icon={<CreditCard className="w-6 h-6 text-slate-400" />}
-                title="No Transactions Yet"
-                description="Your double-entry ledger is clean and ready. In Sprint 2, once deposits or transfers are initiated, immutable debit and credit entries will populate here in real-time."
-                action={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setModalAction('deposit')}
-                  >
-                    Learn about adding funds
-                  </Button>
-                }
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Informative Modal for Sprint 2/3 Feature Preview */}
-        <Modal
-          isOpen={modalAction !== null}
-          onClose={() => setModalAction(null)}
-          title={
-            modalAction === 'deposit'
-              ? 'Add Money (Deposit)'
-              : modalAction === 'send'
-              ? 'Send Money (P2P Transfer)'
-              : modalAction === 'bills'
-              ? 'Pay Utility Bills'
-              : 'Money Requests'
-          }
-          description="Database schema & models are verified and ready for Sprint 2 execution."
-        >
-          <div className="space-y-4 pt-2">
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-2">
-              <div className="flex items-center gap-2 text-slate-800 font-semibold">
-                <Sparkles className="w-4 h-4 text-emerald-600" />
-                <span>Backend Database Foundation Ready</span>
-              </div>
-              <p>
-                All underlying database tables (<code>transactions</code>, <code>ledger_entries</code>,{' '}
-                <code>utility_bills</code>, and <code>money_requests</code>) are fully migrated and seeded in this step.
-              </p>
-              <p>
-                The financial transfer controllers, idempotency guards, and payment gateways will be wired in Sprint 2!
+          {/* Recent Ledger Activity Section */}
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <History className="w-5 h-5 text-slate-500" />
+                <span>Transaction & Ledger Activity</span>
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Real-time immutable debit and credit records with filtering, pagination, and CSV export
               </p>
             </div>
 
-            <div className="flex justify-end pt-2">
-              <Button variant="primary" size="sm" onClick={() => setModalAction(null)}>
-                Got it
-              </Button>
-            </div>
+            <TransactionTable />
           </div>
-        </Modal>
+        </div>
       </AppShell>
     </AuthGuard>
   );

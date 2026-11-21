@@ -64,9 +64,9 @@ export default function LoginPage() {
       toast.success('Welcome back to PayPen!');
 
       if (res.user.is_email_verified || res.user.email_verified_at) {
-        router.replace('/dashboard');
+        window.location.href = '/dashboard';
       } else {
-        router.replace('/verify-email');
+        window.location.href = '/verify-email';
       }
     } catch (err: unknown) {
       const apiErr = err as { data?: { message?: string; errors?: Record<string, string[]> } };
@@ -116,8 +116,16 @@ export default function LoginPage() {
                   required
                 />
 
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-slate-700">Password</span>
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
                 <Input
-                  label="Password"
                   type="password"
                   name="password"
                   placeholder="Enter your password"

@@ -14,6 +14,7 @@ import {
   Receipt,
   HandCoins,
   User,
+  History,
   ShieldCheck,
   LogOut,
   Wallet as WalletIcon,
@@ -41,7 +42,7 @@ export function AppShell({ children }: AppShellProps) {
       dispatch(logout());
       dispatch(baseApi.util.resetApiState());
       toast.success('Logged out successfully');
-      router.replace('/login');
+      window.location.href = '/login';
     }
   };
 
@@ -49,6 +50,7 @@ export function AppShell({ children }: AppShellProps) {
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Send Money', href: '/send', icon: Send },
     { label: 'Add Money', href: '/deposit', icon: ArrowDownToLine },
+    { label: 'Transactions', href: '/transactions', icon: History },
     { label: 'Pay Bills', href: '/bills', icon: Receipt },
     { label: 'Requests', href: '/requests', icon: HandCoins },
     { label: 'Profile', href: '/profile', icon: User },

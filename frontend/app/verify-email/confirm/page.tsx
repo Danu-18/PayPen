@@ -98,9 +98,9 @@ function VerifyConfirmContent() {
       (typeof window !== 'undefined' ? localStorage.getItem('paypen_token') : null);
 
     if (activeToken) {
-      router.push('/dashboard');
+      window.location.href = '/dashboard';
     } else {
-      router.push('/login');
+      window.location.href = '/login';
     }
   };
 

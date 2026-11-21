@@ -25,12 +25,12 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     if (isHydrated) {
       if (!token || !user) {
-        router.replace('/login');
+        window.location.replace('/login');
       } else if (user.is_email_verified || user.email_verified_at) {
-        router.replace('/dashboard');
+        window.location.replace('/dashboard');
       }
     }
-  }, [isHydrated, token, user, router]);
+  }, [isHydrated, token, user]);
 
   // Handle countdown timer
   useEffect(() => {
@@ -72,7 +72,7 @@ export default function VerifyEmailPage() {
   const handleLogout = () => {
     dispatch(logout());
     dispatch(baseApi.util.resetApiState());
-    router.replace('/login');
+    window.location.href = '/login';
   };
 
   if (!isHydrated || !user) {

@@ -28,12 +28,12 @@ export function GuestGuard({ children }: GuestGuardProps) {
 
     if (token && user) {
       if (user.is_email_verified || user.email_verified_at) {
-        router.replace('/dashboard');
+        window.location.replace('/dashboard');
       } else {
-        router.replace('/verify-email');
+        window.location.replace('/verify-email');
       }
     }
-  }, [mounted, isAuthResolved, token, user, router]);
+  }, [mounted, isAuthResolved, token, user]);
 
   // While checking on client or if already authenticated, don't flash the guest form
   if (mounted && isAuthResolved && token && user) {

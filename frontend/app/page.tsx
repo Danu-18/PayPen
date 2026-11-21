@@ -14,12 +14,12 @@ export default function HomePage() {
   useEffect(() => {
     if (isHydrated && token && user) {
       if (user.is_email_verified || user.email_verified_at) {
-        router.replace('/dashboard');
+        window.location.replace('/dashboard');
       } else {
-        router.replace('/verify-email');
+        window.location.replace('/verify-email');
       }
     }
-  }, [isHydrated, token, user, router]);
+  }, [isHydrated, token, user]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 flex flex-col justify-between selection:bg-emerald-500 selection:text-white">

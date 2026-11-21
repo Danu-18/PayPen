@@ -25,14 +25,14 @@ export function AuthGuard({ children, requireVerified = true }: AuthGuardProps) 
     if (!mounted || !isAuthResolved) return;
 
     if (!token || !user) {
-      router.replace('/login');
+      window.location.replace('/login');
       return;
     }
 
     if (requireVerified && !user.is_email_verified && !user.email_verified_at) {
-      router.replace('/verify-email');
+      window.location.replace('/verify-email');
     }
-  }, [mounted, isAuthResolved, token, user, requireVerified, router]);
+  }, [mounted, isAuthResolved, token, user, requireVerified]);
 
   // Before mounting on client or before auth is resolved from localStorage,
   // render the exact same loading skeleton to ensure perfect server/client hydration match.
