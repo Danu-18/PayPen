@@ -69,7 +69,7 @@ function ResetPasswordForm() {
       }).unwrap();
 
       toast.success('Your password has been successfully reset! Please sign in.');
-      router.replace('/login');
+      window.location.href = '/login';
     } catch (err: unknown) {
       const apiErr = err as { data?: { message?: string } };
       toast.error(apiErr.data?.message || 'Failed to reset password. Link may have expired.');

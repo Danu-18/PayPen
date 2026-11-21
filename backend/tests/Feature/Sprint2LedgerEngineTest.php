@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\ResetPasswordMail;
 use App\Models\AuditLog;
 use App\Models\LedgerEntry;
 use App\Models\SystemSetting;
@@ -12,6 +13,7 @@ use Database\Seeders\SystemWalletSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -431,11 +433,17 @@ class Sprint2LedgerEngineTest extends TestCase
 
     public function test_password_reset_flow_with_15_minute_expiry(): void
     {
+        Mail::fake();
+
         // 1. Request forgot password
         $forgotRes = $this->postJson('/api/auth/forgot-password', [
             'email' => 'sender@paypen.test',
         ]);
         $forgotRes->assertStatus(200);
+
+        Mail::assertSent(ResetPasswordMail::class, function ($mail) {
+            return $mail->hasTo('sender@paypen.test') && str_contains($mail->resetUrl, 'token=');
+        });
 
         $record = DB::table('password_reset_tokens')->where('email', 'sender@paypen.test')->first();
         $this->assertNotNull($record);

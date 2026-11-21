@@ -9,6 +9,7 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Resources\UserResource;
 use App\Http\Resources\WalletResource;
+use App\Mail\ResetPasswordMail;
 use App\Models\User;
 use App\Services\AuditLogService;
 use Carbon\Carbon;
@@ -240,12 +241,7 @@ class AuthController extends Controller
             $resetUrl = "{$frontendUrl}/reset-password?token={$token}&email=" . urlencode($email);
 
             try {
-                Mail::raw(
-                    "Hello {$user->name},\n\nYou requested a password reset for your PayPen account.\nClick the link below to set a new password (valid for 15 minutes):\n{$resetUrl}\n\nIf you did not request this, please ignore this email.",
-                    function ($message) use ($user) {
-                        $message->to($user->email)->subject('Reset Your PayPen Password');
-                    }
-                );
+                Mail::to($user->email)->send(new ResetPasswordMail($user, $resetUrl));
             } catch (\Throwable $e) {
                 // If mail service fails, log error but continue gracefully
                 \Illuminate\Support\Facades\Log::error("Failed sending reset email: " . $e->getMessage());
