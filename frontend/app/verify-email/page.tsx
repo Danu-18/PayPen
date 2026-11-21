@@ -5,17 +5,19 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/src/redux/hooks';
 import { useResendVerificationMutation } from '@/src/redux/api/authApi';
-import { logout } from '@/src/redux/slices/authSlice';
+import { useLazyGetProfileQuery } from '@/src/redux/api/profileApi';
+import { logout, updateUser, markVerified } from '@/src/redux/slices/authSlice';
 import { Button } from '@/src/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/src/components/ui/Card';
 import { toast } from 'sonner';
-import { MailCheck, RefreshCw, LogOut, Terminal, ArrowRight } from 'lucide-react';
+import { MailCheck, RefreshCw, LogOut, ArrowRight, Loader2 } from 'lucide-react';
 
 export default function VerifyEmailPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { user, token, isHydrated } = useAppSelector((state) => state.auth);
   const [resendApi, { isLoading: isResending }] = useResendVerificationMutation();
+  const [triggerGetProfile, { isLoading: isCheckingStatus }] = useLazyGetProfileQuery();
 
   const [cooldown, setCooldown] = useState(0);
 
@@ -47,6 +49,22 @@ export default function VerifyEmailPage() {
     } catch (err: unknown) {
       const apiErr = err as { data?: { message?: string } };
       toast.error(apiErr.data?.message || 'Failed to resend verification link.');
+    }
+  };
+
+  const handleCheckStatus = async () => {
+    try {
+      const res = await triggerGetProfile().unwrap();
+      if (res?.user?.is_email_verified || res?.user?.email_verified_at) {
+        dispatch(updateUser(res.user));
+        dispatch(markVerified());
+        toast.success('Email confirmed! Loading your wallet dashboard...');
+        router.push('/dashboard');
+      } else {
+        toast.info('Email is not verified yet. Please click the link sent to your inbox.');
+      }
+    } catch {
+      toast.info('Email is still pending verification. Please click the link in your email.');
     }
   };
 
@@ -99,16 +117,21 @@ export default function VerifyEmailPage() {
                 variant="primary"
                 size="md"
                 className="w-full"
-                leftIcon={<RefreshCw className={`w-4 h-4 ${cooldown > 0 ? '' : ''}`} />}
+                leftIcon={<RefreshCw className="w-4 h-4" />}
               >
                 {cooldown > 0 ? `Resend Available in ${cooldown}s` : 'Resend Verification Link'}
               </Button>
 
-              <Link href="/dashboard" className="w-full">
-                <Button variant="outline" size="md" className="w-full" rightIcon={<ArrowRight className="w-4 h-4" />}>
-                  Check Status / Refresh
-                </Button>
-              </Link>
+              <Button
+                variant="outline"
+                size="md"
+                className="w-full"
+                onClick={handleCheckStatus}
+                isLoading={isCheckingStatus}
+                rightIcon={<ArrowRight className="w-4 h-4" />}
+              >
+                Check Status / Refresh
+              </Button>
 
               <button
                 type="button"

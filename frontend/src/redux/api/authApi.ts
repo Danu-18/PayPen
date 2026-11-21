@@ -33,7 +33,7 @@ export const authApi = baseApi.injectEndpoints({
         body: body || {},
       }),
     }),
-    verifyEmail: builder.query<{ message: string; user: User }, { id: string | number; hash: string; urlParams?: string }>({
+    verifyEmail: builder.query<{ message: string; user: User; token?: string }, { id: string | number; hash: string; urlParams?: string }>({
       query: ({ id, hash, urlParams }) => ({
         url: `/auth/email/verify/${id}/${hash}${urlParams ? `?${urlParams}` : ''}`,
         method: 'GET',

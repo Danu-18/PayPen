@@ -2,41 +2,79 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { useAppDispatch } from '@/src/redux/hooks';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAppDispatch, useAppSelector } from '@/src/redux/hooks';
 import { useLazyVerifyEmailQuery } from '@/src/redux/api/authApi';
-import { updateUser } from '@/src/redux/slices/authSlice';
+import { useLazyGetProfileQuery } from '@/src/redux/api/profileApi';
+import { setCredentials, setToken, markVerified, updateUser } from '@/src/redux/slices/authSlice';
 import { Button } from '@/src/components/ui/Button';
 import { Card, CardContent } from '@/src/components/ui/Card';
-import { CheckCircle2, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Loader2, AlertCircle, LogIn } from 'lucide-react';
 
 function VerifyConfirmContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
-  const [triggerVerify, { isLoading }] = useLazyVerifyEmailQuery();
+  const { user, token: currentToken } = useAppSelector((state) => state.auth);
+
+  const [triggerVerify] = useLazyVerifyEmailQuery();
+  const [triggerGetProfile] = useLazyGetProfileQuery();
 
   const [verifiedState, setVerifiedState] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     const status = searchParams.get('status');
+    const tokenParam = searchParams.get('token');
     const id = searchParams.get('id');
     const hash = searchParams.get('hash');
 
+    // 1. If backend passed a fresh authentication token in redirect, save it immediately
+    if (tokenParam) {
+      dispatch(setToken(tokenParam));
+    }
+
+    // 2. If status is success (redirected from Laravel backend verify route)
     if (status === 'success') {
-      setVerifiedState('success');
+      dispatch(markVerified());
+
+      // Fetch fresh profile & wallet with the active token
+      triggerGetProfile()
+        .unwrap()
+        .then((res) => {
+          if (res?.user) {
+            dispatch(
+              setCredentials({
+                user: res.user,
+                token: tokenParam || currentToken || (typeof window !== 'undefined' ? localStorage.getItem('paypen_token') || '' : ''),
+                wallet: res.wallet,
+              })
+            );
+          }
+          setVerifiedState('success');
+        })
+        .catch(() => {
+          // Even if profile fetch network blips, mark verified state
+          setVerifiedState('success');
+        });
       return;
     }
 
+    // 3. Direct frontend query verification (if signed link is visited directly)
     if (id && hash) {
-      // Direct query param verification
       const fullQuery = searchParams.toString();
       triggerVerify({ id, hash, urlParams: fullQuery })
         .unwrap()
         .then((res) => {
+          if (res.token) {
+            dispatch(setToken(res.token));
+          }
           if (res.user) {
             dispatch(updateUser(res.user));
           }
+          dispatch(markVerified());
+          triggerGetProfile();
           setVerifiedState('success');
         })
         .catch((err: unknown) => {
@@ -45,9 +83,26 @@ function VerifyConfirmContent() {
           setVerifiedState('error');
         });
     } else {
+      dispatch(markVerified());
       setVerifiedState('success');
     }
-  }, [searchParams, triggerVerify, dispatch]);
+  }, [searchParams, triggerVerify, triggerGetProfile, dispatch, currentToken]);
+
+  const handleProceedToDashboard = () => {
+    setIsNavigating(true);
+    dispatch(markVerified());
+
+    const activeToken =
+      currentToken ||
+      searchParams.get('token') ||
+      (typeof window !== 'undefined' ? localStorage.getItem('paypen_token') : null);
+
+    if (activeToken) {
+      router.push('/dashboard');
+    } else {
+      router.push('/login');
+    }
+  };
 
   return (
     <div className="w-full max-w-md">
@@ -73,12 +128,24 @@ function VerifyConfirmContent() {
                 </p>
               </div>
 
-              <div className="pt-4">
-                <Link href="/dashboard" className="w-full block">
-                  <Button size="lg" className="w-full" rightIcon={<ArrowRight className="w-4 h-4" />}>
-                    Proceed to Dashboard
-                  </Button>
-                </Link>
+              <div className="pt-4 flex flex-col gap-2.5">
+                <Button
+                  size="lg"
+                  className="w-full"
+                  onClick={handleProceedToDashboard}
+                  isLoading={isNavigating}
+                  rightIcon={<ArrowRight className="w-4 h-4" />}
+                >
+                  Proceed to Dashboard
+                </Button>
+
+                {!currentToken && !searchParams.get('token') && (
+                  <Link href="/login" className="w-full block">
+                    <Button variant="outline" size="md" className="w-full" leftIcon={<LogIn className="w-4 h-4" />}>
+                      Sign In to Account
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           )}

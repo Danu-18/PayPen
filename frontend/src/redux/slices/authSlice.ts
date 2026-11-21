@@ -53,6 +53,21 @@ export const authSlice = createSlice({
         }
       }
     },
+    setToken: (state, action: PayloadAction<string>) => {
+      state.token = action.payload;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('paypen_token', action.payload);
+      }
+    },
+    markVerified: (state) => {
+      if (state.user) {
+        state.user.is_email_verified = true;
+        state.user.email_verified_at = new Date().toISOString();
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('paypen_user', JSON.stringify(state.user));
+        }
+      }
+    },
     updateUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
       if (action.payload.wallet) {
@@ -85,5 +100,5 @@ export const authSlice = createSlice({
   },
 });
 
-export const { hydrate, setCredentials, updateUser, updateWallet, logout } = authSlice.actions;
+export const { hydrate, setCredentials, setToken, markVerified, updateUser, updateWallet, logout } = authSlice.actions;
 export default authSlice.reducer;

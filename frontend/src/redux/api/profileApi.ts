@@ -24,4 +24,4 @@ export const profileApi = baseApi.injectEndpoints({
   }),
 });
 
-export const { useGetProfileQuery, useUpdateMpinMutation } = profileApi;
+export const { useGetProfileQuery, useLazyGetProfileQuery, useUpdateMpinMutation } = profileApi;

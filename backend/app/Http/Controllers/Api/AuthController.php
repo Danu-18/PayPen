@@ -156,16 +156,21 @@ class AuthController extends Controller
             );
         }
 
-        // If browser requested html, redirect to frontend confirm page
+        $freshUser = $user->fresh('wallet');
+        $token = $freshUser->createToken('auth_token')->plainTextToken;
+
+        // If browser/client requested json, return json response
         if ($request->wantsJson()) {
             return response()->json([
                 'message' => 'Email verified successfully.',
-                'user' => new UserResource($user->fresh('wallet')),
+                'token' => $token,
+                'user' => new UserResource($freshUser),
+                'wallet' => $freshUser->wallet ? new WalletResource($freshUser->wallet) : null,
             ]);
         }
 
         $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
-        return redirect()->to("{$frontendUrl}/verify-email/confirm?status=success");
+        return redirect()->to("{$frontendUrl}/verify-email/confirm?status=success&token={$token}");
     }
 
     /**
