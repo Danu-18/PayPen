@@ -33,21 +33,22 @@ export default function DashboardPage() {
   const { user, wallet, token } = useAppSelector((state) => state.auth);
   const { data: profileData, refetch } = useGetProfileQuery(undefined, {
     skip: !token,
+    refetchOnMountOrArgChange: true,
     pollingInterval: 30000,
   });
 
   const [copied, setCopied] = useState(false);
   const [modalAction, setModalAction] = useState<string | null>(null);
 
-  // Sync profile data to redux state when fetched
+  // Sync profile data to redux state when fetched (strictly for currently logged in user)
   React.useEffect(() => {
-    if (profileData?.user) {
+    if (profileData?.user && user && profileData.user.id === user.id) {
       dispatch(updateUser(profileData.user));
     }
-  }, [profileData, dispatch]);
+  }, [profileData, user, dispatch]);
 
-  const activeWallet = profileData?.wallet || wallet || user?.wallet;
-  const currentUser = profileData?.user || user;
+  const activeWallet = (profileData?.user?.id === user?.id ? profileData?.wallet : null) || wallet || user?.wallet;
+  const currentUser = (profileData?.user?.id === user?.id ? profileData?.user : null) || user;
 
   const handleCopyWalletCode = () => {
     if (activeWallet?.wallet_code) {

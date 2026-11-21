@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { useLoginMutation } from '@/src/redux/api/authApi';
 import { useAppDispatch } from '@/src/redux/hooks';
 import { setCredentials } from '@/src/redux/slices/authSlice';
+import { baseApi } from '@/src/redux/api/baseApi';
+import { GuestGuard } from '@/src/components/auth/GuestGuard';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/src/components/ui/Card';
@@ -48,6 +50,10 @@ export default function LoginPage() {
 
     try {
       const res = await loginApi(formData).unwrap();
+
+      // Clear any prior user's cached queries completely
+      dispatch(baseApi.util.resetApiState());
+
       dispatch(
         setCredentials({
           user: res.user,
@@ -58,9 +64,9 @@ export default function LoginPage() {
       toast.success('Welcome back to PayPen!');
 
       if (res.user.is_email_verified || res.user.email_verified_at) {
-        router.push('/dashboard');
+        router.replace('/dashboard');
       } else {
-        router.push('/verify-email');
+        router.replace('/verify-email');
       }
     } catch (err: unknown) {
       const apiErr = err as { data?: { message?: string; errors?: Record<string, string[]> } };
@@ -77,70 +83,75 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8">
-      <div className="w-full max-w-md">
-        {/* Brand Header */}
-        <div className="flex flex-col items-center mb-8 text-center">
-          <Link href="/" className="inline-flex items-center gap-2.5 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-600/20">
-              <CreditCard className="w-5 h-5" />
-            </div>
-            <span className="font-bold text-2xl tracking-tight text-slate-900">PayPen</span>
-          </Link>
-          <p className="text-sm text-slate-500">Sign in to your digital wallet</p>
-        </div>
+    <GuestGuard>
+      <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8">
+        <div className="w-full max-w-md">
+          {/* Brand Header */}
+          <div className="flex flex-col items-center mb-8 text-center">
+            <Link href="/" className="inline-flex items-center gap-2.5 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-600/20">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <span className="font-bold text-2xl tracking-tight text-slate-900">PayPen</span>
+            </Link>
+            <p className="text-sm text-slate-500">Sign in to your digital wallet</p>
+          </div>
 
-        <Card className="border-slate-200/80 shadow-md">
-          <CardHeader>
-            <CardTitle>Welcome back</CardTitle>
-            <CardDescription>
-              Enter your credentials to access your wallet and ledger
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                label="Email Address"
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                leftIcon={<Mail className="w-4 h-4" />}
-                error={errors.email}
-              />
+          <Card className="border-slate-200/80 shadow-md">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-xl">Welcome back</CardTitle>
+              <CardDescription>Enter your credentials to access your wallet and ledger</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <Input
+                  label="Email Address"
+                  type="email"
+                  name="email"
+                  placeholder="name@example.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  error={errors.email}
+                  leftIcon={<Mail className="w-4 h-4 text-slate-400" />}
+                  required
+                />
 
-              <Input
-                label="Password"
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                leftIcon={<Lock className="w-4 h-4" />}
-                error={errors.password}
-              />
+                <Input
+                  label="Password"
+                  type="password"
+                  name="password"
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  error={errors.password}
+                  leftIcon={<Lock className="w-4 h-4 text-slate-400" />}
+                  required
+                />
 
-              <Button type="submit" size="lg" className="w-full mt-2" isLoading={isLoading}>
-                Sign In
-              </Button>
-            </form>
+                <Button type="submit" size="lg" className="w-full mt-2" isLoading={isLoading}>
+                  Sign In
+                </Button>
+              </form>
 
-            <div className="mt-6 text-center text-sm text-slate-500">
-              Don&apos;t have an account yet?{' '}
-              <Link href="/register" className="font-semibold text-emerald-600 hover:text-emerald-500">
-                Open a free wallet
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="mt-6 text-center text-sm text-slate-500">
+                Don&apos;t have an account yet?{' '}
+                <Link
+                  href="/register"
+                  className="font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
+                >
+                  Open a free wallet
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Security Notice */}
-        <div className="flex items-center justify-center gap-2 mt-8 text-xs text-slate-400">
-          <ShieldCheck className="w-4 h-4 text-emerald-500" />
-          <span>Encrypted with 256-bit SSL & Laravel Sanctum authentication</span>
+          {/* Security Assurance Badge */}
+          <div className="mt-8 flex items-center justify-center gap-2 text-xs text-slate-400">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>Encrypted with 256-bit SSL & Laravel Sanctum authentication</span>
+          </div>
         </div>
       </div>
-    </div>
+    </GuestGuard>
   );
 }

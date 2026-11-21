@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/src/redux/hooks';
 import { logout } from '@/src/redux/slices/authSlice';
+import { baseApi } from '@/src/redux/api/baseApi';
 import { useLogoutMutation } from '@/src/redux/api/authApi';
 import {
   LayoutDashboard,
@@ -38,8 +39,9 @@ export function AppShell({ children }: AppShellProps) {
       // ignore network errors on logout
     } finally {
       dispatch(logout());
+      dispatch(baseApi.util.resetApiState());
       toast.success('Logged out successfully');
-      router.push('/login');
+      router.replace('/login');
     }
   };
 

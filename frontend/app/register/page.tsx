@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { useRegisterMutation } from '@/src/redux/api/authApi';
 import { useAppDispatch } from '@/src/redux/hooks';
 import { setCredentials } from '@/src/redux/slices/authSlice';
+import { baseApi } from '@/src/redux/api/baseApi';
+import { GuestGuard } from '@/src/components/auth/GuestGuard';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/src/components/ui/Card';
@@ -73,6 +75,8 @@ export default function RegisterPage() {
 
     try {
       const res = await registerApi(formData).unwrap();
+      // Clear any prior user's cached queries completely
+      dispatch(baseApi.util.resetApiState());
       dispatch(
         setCredentials({
           user: res.user,
@@ -81,7 +85,7 @@ export default function RegisterPage() {
         })
       );
       toast.success('Registration successful! Please verify your email.');
-      router.push('/verify-email');
+      router.replace('/verify-email');
     } catch (err: unknown) {
       const apiErr = err as { data?: { message?: string; errors?: Record<string, string[]> } };
       if (apiErr.data?.errors) {
@@ -97,7 +101,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <GuestGuard>
+      <div className="min-h-screen bg-slate-50 flex">
       {/* Left Column: Brand & Security Showcase (Desktop only) */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-white p-12 flex-col justify-between relative overflow-hidden">
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
@@ -281,5 +286,6 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
-  );
+  </GuestGuard>
+);
 }

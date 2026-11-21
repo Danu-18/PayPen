@@ -14,9 +14,9 @@ export default function HomePage() {
   useEffect(() => {
     if (isHydrated && token && user) {
       if (user.is_email_verified || user.email_verified_at) {
-        router.push('/dashboard');
+        router.replace('/dashboard');
       } else {
-        router.push('/verify-email');
+        router.replace('/verify-email');
       }
     }
   }, [isHydrated, token, user, router]);

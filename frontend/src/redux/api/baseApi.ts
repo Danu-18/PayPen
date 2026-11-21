@@ -28,15 +28,16 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
     // 401 Unauthorized -> clear state and redirect to login
     if (status === 401) {
       api.dispatch(logout());
+      api.dispatch(baseApi.util.resetApiState());
       if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
-        window.location.href = '/login';
+        window.location.replace('/login');
       }
     }
 
     // 403 EMAIL_UNVERIFIED -> redirect to verify-email
     if (status === 403 && data?.code === 'EMAIL_UNVERIFIED') {
       if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/verify-email')) {
-        window.location.href = '/verify-email';
+        window.location.replace('/verify-email');
       }
     }
   }

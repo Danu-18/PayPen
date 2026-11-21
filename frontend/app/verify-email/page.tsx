@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from '@/src/redux/hooks';
 import { useResendVerificationMutation } from '@/src/redux/api/authApi';
 import { useLazyGetProfileQuery } from '@/src/redux/api/profileApi';
 import { logout, updateUser, markVerified } from '@/src/redux/slices/authSlice';
+import { baseApi } from '@/src/redux/api/baseApi';
 import { Button } from '@/src/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/src/components/ui/Card';
 import { toast } from 'sonner';
@@ -70,7 +71,8 @@ export default function VerifyEmailPage() {
 
   const handleLogout = () => {
     dispatch(logout());
-    router.push('/login');
+    dispatch(baseApi.util.resetApiState());
+    router.replace('/login');
   };
 
   if (!isHydrated || !user) {

@@ -42,6 +42,7 @@ export const authSlice = createSlice({
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.wallet = action.payload.wallet || action.payload.user.wallet || null;
+      state.isHydrated = true;
 
       if (typeof window !== 'undefined') {
         localStorage.setItem('paypen_token', action.payload.token);
@@ -55,6 +56,7 @@ export const authSlice = createSlice({
     },
     setToken: (state, action: PayloadAction<string>) => {
       state.token = action.payload;
+      state.isHydrated = true;
       if (typeof window !== 'undefined') {
         localStorage.setItem('paypen_token', action.payload);
       }
@@ -70,6 +72,7 @@ export const authSlice = createSlice({
     },
     updateUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
+      state.isHydrated = true;
       if (action.payload.wallet) {
         state.wallet = action.payload.wallet;
         if (typeof window !== 'undefined') {
@@ -90,6 +93,7 @@ export const authSlice = createSlice({
       state.user = null;
       state.wallet = null;
       state.token = null;
+      state.isHydrated = true;
 
       if (typeof window !== 'undefined') {
         localStorage.removeItem('paypen_token');

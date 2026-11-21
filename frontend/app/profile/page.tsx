@@ -28,7 +28,10 @@ import { toast } from 'sonner';
 export default function ProfilePage() {
   const dispatch = useAppDispatch();
   const { user, wallet, token } = useAppSelector((state) => state.auth);
-  const { data: profileData } = useGetProfileQuery(undefined, { skip: !token });
+  const { data: profileData } = useGetProfileQuery(undefined, {
+    skip: !token,
+    refetchOnMountOrArgChange: true,
+  });
   const [updateMpinApi, { isLoading: isUpdatingMpin }] = useUpdateMpinMutation();
 
   const [copied, setCopied] = useState(false);
@@ -42,8 +45,8 @@ export default function ProfilePage() {
 
   const [mpinErrors, setMpinErrors] = useState<Record<string, string>>({});
 
-  const currentUser = profileData?.user || user;
-  const currentWallet = profileData?.wallet || wallet || user?.wallet;
+  const currentUser = (profileData?.user?.id === user?.id ? profileData?.user : null) || user;
+  const currentWallet = (profileData?.user?.id === user?.id ? profileData?.wallet : null) || wallet || user?.wallet;
 
   const handleCopyWalletCode = () => {
     if (currentWallet?.wallet_code) {
