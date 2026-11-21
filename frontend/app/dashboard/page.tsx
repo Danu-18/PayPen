@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/src/redux/hooks';
 import { useGetProfileQuery } from '@/src/redux/api/profileApi';
 import { updateUser } from '@/src/redux/slices/authSlice';
+import { baseApi } from '@/src/redux/api/baseApi';
 import { AuthGuard } from '@/src/components/auth/AuthGuard';
 import { AppShell } from '@/src/components/layout/AppShell';
 import { TransactionTable } from '@/src/components/transactions/TransactionTable';
@@ -27,6 +28,7 @@ import {
   CreditCard,
   Wifi,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -42,6 +44,25 @@ export default function DashboardPage() {
 
   const [copied, setCopied] = useState(false);
   const [modalAction, setModalAction] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefreshBalance = async (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    setIsRefreshing(true);
+    try {
+      const res = await refetch().unwrap();
+      if (res?.user) {
+        dispatch(updateUser(res.user));
+      }
+      // Simultaneously invalidate Transactions query tag so the ledger table below refetches automatically
+      dispatch(baseApi.util.invalidateTags(['Transactions', 'Wallet', 'Profile']));
+      toast.success('Wallet balance & ledger updated');
+    } catch {
+      toast.error('Failed to update balance');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Sync profile data to redux state when fetched (strictly for currently logged in user)
   React.useEffect(() => {
@@ -121,12 +142,6 @@ export default function DashboardPage() {
                 <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />
                 Ledger Live
               </Badge>
-              <button
-                onClick={() => refetch()}
-                className="text-xs font-medium text-slate-500 hover:text-slate-800 underline transition-colors cursor-pointer"
-              >
-                Refresh
-              </button>
             </div>
           </div>
 
@@ -191,13 +206,27 @@ export default function DashboardPage() {
                 <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">
                   Available Balance
                 </p>
-                <div className="text-white">
+                <div className="flex items-center gap-3 text-white">
                   <CurrencyDisplay
                     amountMinor={activeWallet?.balance ?? 0}
                     currency={activeWallet?.currency || 'PKR'}
                     size="hero"
                     className="text-white font-mono"
                   />
+                  <button
+                    type="button"
+                    onClick={handleRefreshBalance}
+                    disabled={isRefreshing}
+                    title="Refresh Balance"
+                    aria-label="Refresh Balance"
+                    className="p-2 sm:p-2.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-slate-300 hover:text-white transition-all cursor-pointer backdrop-blur-xs border border-white/10 shadow-xs group"
+                  >
+                    <RefreshCw
+                      className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform ${
+                        isRefreshing ? 'animate-spin text-emerald-400' : 'group-hover:rotate-180 duration-500'
+                      }`}
+                    />
+                  </button>
                 </div>
               </div>
 
@@ -273,7 +302,7 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            <TransactionTable />
+            <TransactionTable hideRefreshButton />
           </div>
         </div>
       </AppShell>

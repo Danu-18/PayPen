@@ -24,9 +24,14 @@ import {
 export interface TransactionTableProps {
   initialLimit?: number;
   hideFilters?: boolean;
+  hideRefreshButton?: boolean;
 }
 
-export function TransactionTable({ initialLimit = 10, hideFilters = false }: TransactionTableProps) {
+export function TransactionTable({
+  initialLimit = 10,
+  hideFilters = false,
+  hideRefreshButton = false,
+}: TransactionTableProps) {
   const { token } = useAppSelector((state) => state.auth);
 
   const [page, setPage] = useState(1);
@@ -172,15 +177,17 @@ export function TransactionTable({ initialLimit = 10, hideFilters = false }: Tra
           </div>
 
           <div className="flex items-center gap-2 self-end lg:self-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              isLoading={isFetching}
-              leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />}
-            >
-              Refresh
-            </Button>
+            {!hideRefreshButton && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+                isLoading={isFetching}
+                leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />}
+              >
+                Refresh
+              </Button>
+            )}
 
             <Button
               variant="outline"
