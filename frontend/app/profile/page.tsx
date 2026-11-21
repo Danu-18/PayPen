@@ -108,10 +108,12 @@ export default function ProfilePage() {
           {/* Header */}
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Account & Security Profile
+              {currentUser?.role === 'admin' ? 'Administrator Security Profile' : 'Account & Security Profile'}
             </h1>
             <p className="text-sm text-slate-500 mt-1">
-              Manage your personal credentials, digital wallet identifiers, and 4-digit transaction MPIN.
+              {currentUser?.role === 'admin'
+                ? 'Manage your system administrator credentials, security standards, and institutional audit privileges.'
+                : 'Manage your personal credentials, digital wallet identifiers, and 4-digit transaction MPIN.'}
             </p>
           </div>
 
@@ -165,140 +167,207 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
-            {/* Wallet Details Card */}
-            <Card>
+            {/* Wallet Details Card / Admin Authority Card */}
+            {currentUser?.role === 'admin' ? (
+              <Card className="border-rose-200/80 shadow-xs bg-gradient-to-br from-white to-rose-50/30">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base text-rose-950">
+                      <ShieldCheck className="w-4 h-4 text-rose-600" />
+                      <span>Admin Authority</span>
+                    </CardTitle>
+                    <Badge variant="danger">System Admin</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 rounded-xl bg-slate-900 text-white flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider text-slate-400 block">
+                        Privilege Level
+                      </span>
+                      <span className="font-mono text-base font-bold text-rose-300">
+                        ADMIN-LEVEL-1 (ROOT)
+                      </span>
+                    </div>
+                    <ShieldAlert className="w-5 h-5 text-rose-400" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 rounded-xl bg-white border border-slate-200/80">
+                      <span className="text-slate-400 block mb-1">Audit Oversight</span>
+                      <span className="font-semibold text-slate-900">Double-Entry Ledger</span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-white border border-slate-200/80">
+                      <span className="text-slate-400 block mb-1">Ledger Target</span>
+                      <span className="font-mono font-bold text-emerald-600">0.00 PKR Drift</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <WalletIcon className="w-4 h-4 text-emerald-600" />
+                      <span>Primary PKR Wallet</span>
+                    </CardTitle>
+                    <Badge variant="success">Active</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 rounded-xl bg-slate-900 text-white flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider text-slate-400 block">
+                        Wallet ID Code
+                      </span>
+                      <span className="font-mono text-base font-bold text-emerald-300">
+                        {currentWallet?.wallet_code || 'PP-PROVISIONING'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleCopyWalletCode}
+                      title="Copy Wallet ID"
+                      className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+                    >
+                      {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-slate-400 block mb-1">Ledger Balance</span>
+                      <CurrencyDisplay
+                        amountMinor={currentWallet?.balance ?? 0}
+                        currency={currentWallet?.currency || 'PKR'}
+                        size="sm"
+                      />
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                      <span className="text-slate-400 block mb-1">Currency Code</span>
+                      <span className="font-semibold text-slate-800 font-mono">
+                        {currentWallet?.currency || 'PKR'} (Pakistani Rupee)
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* 4-Digit MPIN Section for Standard Users / Institutional Security for Admins */}
+          {currentUser?.role === 'admin' ? (
+            <Card className="border-slate-200/90 shadow-sm bg-slate-900 text-white">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <WalletIcon className="w-4 h-4 text-emerald-600" />
-                    <span>Primary PKR Wallet</span>
-                  </CardTitle>
-                  <Badge variant="success">Active</Badge>
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-white">
+                      <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                      <span>Institutional Administrative Security</span>
+                    </CardTitle>
+                    <CardDescription className="text-slate-400">
+                      Admins are exempted from transaction MPINs because consumer transfers and top-ups are disabled.
+                    </CardDescription>
+                  </div>
+                  <Badge variant="info">Audit Active</Badge>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 rounded-xl bg-slate-900 text-white flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-slate-400 block">
-                      Wallet ID Code
-                    </span>
-                    <span className="font-mono text-base font-bold text-emerald-300">
-                      {currentWallet?.wallet_code || 'PP-PROVISIONING'}
-                    </span>
-                  </div>
-                  <button
-                    onClick={handleCopyWalletCode}
-                    title="Copy Wallet ID"
-                    className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
-                  >
-                    {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-slate-400 block mb-1">Ledger Balance</span>
-                    <CurrencyDisplay
-                      amountMinor={currentWallet?.balance ?? 0}
-                      currency={currentWallet?.currency || 'PKR'}
-                      size="sm"
-                    />
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-slate-400 block mb-1">Currency Code</span>
-                    <span className="font-semibold text-slate-800 font-mono">
-                      {currentWallet?.currency || 'PKR'} (Pakistani Rupee)
-                    </span>
-                  </div>
+              <CardContent className="space-y-3 text-xs text-slate-300">
+                <p>
+                  All administrative session actions, reconciliation inspections, and system configuration adjustments are automatically authenticated via 256-bit Sanctum sessions and permanently recorded to the immutable ledger audit logs.
+                </p>
+                <div className="p-3.5 rounded-xl bg-black/40 border border-white/10 font-mono text-[11px] text-emerald-400 flex items-center justify-between">
+                  <span>AUDIT_LOGS_ACTIVE : TRUE</span>
+                  <span className="text-slate-400">ENFORCE_IMMUTABLE : TRUE</span>
                 </div>
               </CardContent>
             </Card>
-          </div>
-
-          {/* 4-Digit MPIN Setup/Update Section (SCRUM-17 / Sprint 1 Requirement) */}
-          <Card id="mpin" className="border-slate-200 shadow-md">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <KeyRound className="w-5 h-5 text-emerald-600" />
-                    <span>4-Digit Transaction MPIN</span>
-                  </CardTitle>
-                  <CardDescription>
-                    {currentUser?.has_mpin
-                      ? 'Your 4-digit MPIN is active. You can update it anytime with your account password.'
-                      : 'Create your 4-digit numeric MPIN to secure transfers and bill payments.'}
-                  </CardDescription>
+          ) : (
+            <Card id="mpin" className="border-slate-200 shadow-md">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <KeyRound className="w-5 h-5 text-emerald-600" />
+                      <span>4-Digit Transaction MPIN</span>
+                    </CardTitle>
+                    <CardDescription>
+                      {currentUser?.has_mpin
+                        ? 'Your 4-digit MPIN is active. You can update it anytime with your account password.'
+                        : 'Create your 4-digit numeric MPIN to secure transfers and bill payments.'}
+                    </CardDescription>
+                  </div>
+                  <Badge variant={currentUser?.has_mpin ? 'success' : 'warning'}>
+                    {currentUser?.has_mpin ? 'MPIN Configured' : 'MPIN Not Set'}
+                  </Badge>
                 </div>
-                <Badge variant={currentUser?.has_mpin ? 'success' : 'warning'}>
-                  {currentUser?.has_mpin ? 'MPIN Configured' : 'MPIN Not Set'}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleMpinSubmit} className="space-y-4 max-w-md">
-                {currentUser?.has_mpin && (
-                  <Input
-                    label="Current Account Password"
-                    id="current_password"
-                    type="password"
-                    placeholder="Enter your account password"
-                    value={mpinForm.current_password}
-                    onChange={(e) =>
-                      setMpinForm({ ...mpinForm, current_password: e.target.value })
-                    }
-                    leftIcon={<Lock className="w-4 h-4" />}
-                    error={mpinErrors.current_password}
-                  />
-                )}
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleMpinSubmit} className="space-y-4 max-w-md">
+                  {currentUser?.has_mpin && (
+                    <Input
+                      label="Current Account Password"
+                      id="current_password"
+                      type="password"
+                      placeholder="Enter your account password"
+                      value={mpinForm.current_password}
+                      onChange={(e) =>
+                        setMpinForm({ ...mpinForm, current_password: e.target.value })
+                      }
+                      leftIcon={<Lock className="w-4 h-4" />}
+                      error={mpinErrors.current_password}
+                    />
+                  )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label={currentUser?.has_mpin ? 'New 4-Digit MPIN' : 'Enter 4-Digit MPIN'}
-                    id="mpin"
-                    type="password"
-                    maxLength={4}
-                    placeholder="••••"
-                    value={mpinForm.mpin}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '').slice(0, 4);
-                      setMpinForm({ ...mpinForm, mpin: val });
-                    }}
-                    error={mpinErrors.mpin}
-                    helperText="Exactly 4 numeric digits"
-                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      label={currentUser?.has_mpin ? 'New 4-Digit MPIN' : 'Enter 4-Digit MPIN'}
+                      id="mpin"
+                      type="password"
+                      maxLength={4}
+                      placeholder="••••"
+                      value={mpinForm.mpin}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                        setMpinForm({ ...mpinForm, mpin: val });
+                      }}
+                      error={mpinErrors.mpin}
+                      helperText="Exactly 4 numeric digits"
+                    />
 
-                  <Input
-                    label="Confirm 4-Digit MPIN"
-                    id="mpin_confirmation"
-                    type="password"
-                    maxLength={4}
-                    placeholder="••••"
-                    value={mpinForm.mpin_confirmation}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '').slice(0, 4);
-                      setMpinForm({ ...mpinForm, mpin_confirmation: val });
-                    }}
-                    error={mpinErrors.mpin_confirmation}
-                    helperText="Must match MPIN"
-                  />
-                </div>
+                    <Input
+                      label="Confirm 4-Digit MPIN"
+                      id="mpin_confirmation"
+                      type="password"
+                      maxLength={4}
+                      placeholder="••••"
+                      value={mpinForm.mpin_confirmation}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                        setMpinForm({ ...mpinForm, mpin_confirmation: val });
+                      }}
+                      error={mpinErrors.mpin_confirmation}
+                      helperText="Must match MPIN"
+                    />
+                  </div>
 
-                <div className="pt-2">
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="md"
-                    isLoading={isUpdatingMpin}
-                    leftIcon={<ShieldCheck className="w-4 h-4" />}
-                  >
-                    {currentUser?.has_mpin ? 'Update MPIN' : 'Save 4-Digit MPIN'}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+                  <div className="pt-2">
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      size="md"
+                      isLoading={isUpdatingMpin}
+                      leftIcon={<ShieldCheck className="w-4 h-4" />}
+                    >
+                      {currentUser?.has_mpin ? 'Update MPIN' : 'Save 4-Digit MPIN'}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </AppShell>
     </AuthGuard>

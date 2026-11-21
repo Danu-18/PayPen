@@ -38,6 +38,13 @@ export default function SendPage() {
   const [note, setNote] = useState('');
   const [mpin, setMpin] = useState('');
 
+  // Admin guard: Admins do not execute consumer transfers
+  React.useEffect(() => {
+    if (user?.role === 'admin') {
+      window.location.replace('/admin');
+    }
+  }, [user]);
+
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
 

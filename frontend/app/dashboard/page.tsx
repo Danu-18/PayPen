@@ -66,10 +66,18 @@ export default function DashboardPage() {
 
   // Sync profile data to redux state when fetched (strictly for currently logged in user)
   React.useEffect(() => {
+    if (user?.role === 'admin') {
+      window.location.replace('/admin');
+      return;
+    }
     if (profileData?.user && user && profileData.user.id === user.id) {
       dispatch(updateUser(profileData.user));
     }
   }, [profileData, user, dispatch]);
+
+  if (user?.role === 'admin') {
+    return null;
+  }
 
   const activeWallet = (profileData?.user?.id === user?.id ? profileData?.wallet : null) || wallet || user?.wallet;
   const currentUser = (profileData?.user?.id === user?.id ? profileData?.user : null) || user;

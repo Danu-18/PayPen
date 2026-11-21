@@ -26,8 +26,15 @@ import {
 
 export default function DepositPage() {
   const router = useRouter();
-  const { wallet } = useAppSelector((state) => state.auth);
+  const { user, wallet } = useAppSelector((state) => state.auth);
   const [depositApi, { isLoading }] = useDepositMutation();
+
+  // Admin guard: Admins do not execute consumer deposits
+  React.useEffect(() => {
+    if (user?.role === 'admin') {
+      window.location.replace('/admin');
+    }
+  }, [user]);
 
   const [amountPkr, setAmountPkr] = useState<string>('1000');
   const [cardNumber, setCardNumber] = useState<string>('4242 4242 4242 4242');

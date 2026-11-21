@@ -63,7 +63,9 @@ export default function LoginPage() {
       );
       toast.success('Welcome back to PayPen!');
 
-      if (res.user.is_email_verified || res.user.email_verified_at) {
+      if (res.user.role === 'admin') {
+        window.location.href = '/admin';
+      } else if (res.user.is_email_verified || res.user.email_verified_at) {
         window.location.href = '/dashboard';
       } else {
         window.location.href = '/verify-email';

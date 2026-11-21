@@ -27,7 +27,9 @@ export function GuestGuard({ children }: GuestGuardProps) {
     if (!mounted || !isAuthResolved) return;
 
     if (token && user) {
-      if (user.is_email_verified || user.email_verified_at) {
+      if (user.role === 'admin') {
+        window.location.replace('/admin');
+      } else if (user.is_email_verified || user.email_verified_at) {
         window.location.replace('/dashboard');
       } else {
         window.location.replace('/verify-email');
