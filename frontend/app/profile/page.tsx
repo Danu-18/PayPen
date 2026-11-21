@@ -27,8 +27,8 @@ import { toast } from 'sonner';
 
 export default function ProfilePage() {
   const dispatch = useAppDispatch();
-  const { user, wallet } = useAppSelector((state) => state.auth);
-  const { data: profileData } = useGetProfileQuery();
+  const { user, wallet, token } = useAppSelector((state) => state.auth);
+  const { data: profileData } = useGetProfileQuery(undefined, { skip: !token });
   const [updateMpinApi, { isLoading: isUpdatingMpin }] = useUpdateMpinMutation();
 
   const [copied, setCopied] = useState(false);

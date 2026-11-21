@@ -30,8 +30,9 @@ import { toast } from 'sonner';
 
 export default function DashboardPage() {
   const dispatch = useAppDispatch();
-  const { user, wallet } = useAppSelector((state) => state.auth);
+  const { user, wallet, token } = useAppSelector((state) => state.auth);
   const { data: profileData, refetch } = useGetProfileQuery(undefined, {
+    skip: !token,
     pollingInterval: 30000,
   });
 
