@@ -27,33 +27,10 @@ import Link from 'next/link';
 
 export default function AdminPage() {
   const router = useRouter();
-  const { user } = useAppSelector((state) => state.auth);
-  const { data, isLoading, isFetching, refetch } = useGetReconciliationQuery();
-
-  if (user && user.role !== 'admin') {
-    return (
-      <AuthGuard>
-        <AppShell>
-          <div className="max-w-md mx-auto text-center py-16 space-y-4">
-            <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto shadow-xs">
-              <ShieldAlert className="w-8 h-8" />
-            </div>
-            <h1 className="text-2xl font-bold text-slate-900">Restricted Access</h1>
-            <p className="text-sm text-slate-500">
-              This portal is strictly restricted to PayPen System Administrators.
-            </p>
-            <div className="pt-2">
-              <Link href="/dashboard">
-                <Button variant="outline" size="md" leftIcon={<ArrowLeft className="w-4 h-4" />}>
-                  Back to Dashboard
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </AppShell>
-      </AuthGuard>
-    );
-  }
+  const { user, token } = useAppSelector((state) => state.auth);
+  const { data, isLoading, isFetching, refetch } = useGetReconciliationQuery(undefined, {
+    skip: !token || user?.role !== 'admin',
+  });
 
   const report = data?.data;
   const isBalanced = report?.is_balanced;
@@ -70,31 +47,49 @@ export default function AdminPage() {
   return (
     <AuthGuard>
       <AppShell>
-        <div className="max-w-6xl mx-auto space-y-8">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-                  Liquidity & Ledger Reconciliation
-                </h1>
-                <Badge variant="info">Admin Level 1</Badge>
-              </div>
-              <p className="text-sm text-slate-500 mt-1">
-                Real-time mathematical verification of double-entry ledger parity across all institutional wallets
-              </p>
+        {user?.role !== 'admin' ? (
+          <div className="max-w-md mx-auto text-center py-16 space-y-4">
+            <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto shadow-xs">
+              <ShieldAlert className="w-8 h-8" />
             </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              isLoading={isFetching}
-              leftIcon={<RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />}
-            >
-              Re-Run Audit
-            </Button>
+            <h1 className="text-2xl font-bold text-slate-900">Restricted Access</h1>
+            <p className="text-sm text-slate-500">
+              This portal is strictly restricted to PayPen System Administrators.
+            </p>
+            <div className="pt-2">
+              <Link href="/dashboard">
+                <Button variant="outline" size="md" leftIcon={<ArrowLeft className="w-4 h-4" />}>
+                  Back to Dashboard
+                </Button>
+              </Link>
+            </div>
           </div>
+        ) : (
+          <div className="max-w-6xl mx-auto space-y-8">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                    Liquidity & Ledger Reconciliation
+                  </h1>
+                  <Badge variant="info">Admin Level 1</Badge>
+                </div>
+                <p className="text-sm text-slate-500 mt-1">
+                  Real-time mathematical verification of double-entry ledger parity across all institutional wallets
+                </p>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                isLoading={isFetching}
+                leftIcon={<RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />}
+              >
+                Re-Run Audit
+              </Button>
+            </div>
 
           {/* Reconciliation Status Banner */}
           {isLoading ? (
@@ -294,6 +289,7 @@ export default function AdminPage() {
             </CardContent>
           </Card>
         </div>
+        )}
       </AppShell>
     </AuthGuard>
   );
