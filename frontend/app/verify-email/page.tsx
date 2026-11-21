@@ -1,0 +1,127 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAppDispatch, useAppSelector } from '@/src/redux/hooks';
+import { useResendVerificationMutation } from '@/src/redux/api/authApi';
+import { logout } from '@/src/redux/slices/authSlice';
+import { Button } from '@/src/components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/src/components/ui/Card';
+import { toast } from 'sonner';
+import { MailCheck, RefreshCw, LogOut, Terminal, ArrowRight } from 'lucide-react';
+
+export default function VerifyEmailPage() {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { user, token, isHydrated } = useAppSelector((state) => state.auth);
+  const [resendApi, { isLoading: isResending }] = useResendVerificationMutation();
+
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (isHydrated) {
+      if (!token || !user) {
+        router.replace('/login');
+      } else if (user.is_email_verified || user.email_verified_at) {
+        router.replace('/dashboard');
+      }
+    }
+  }, [isHydrated, token, user, router]);
+
+  // Handle countdown timer
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
+  const handleResend = async () => {
+    if (cooldown > 0) return;
+    try {
+      await resendApi().unwrap();
+      toast.success('Verification link has been sent to your email.');
+      setCooldown(60);
+    } catch (err: unknown) {
+      const apiErr = err as { data?: { message?: string } };
+      toast.error(apiErr.data?.message || 'Failed to resend verification link.');
+    }
+  };
+
+  const handleLogout = () => {
+    dispatch(logout());
+    router.push('/login');
+  };
+
+  if (!isHydrated || !user) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 rounded-3xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-4 shadow-sm border border-amber-200/60">
+            <MailCheck className="w-8 h-8" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Verify Your Email</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Wallet operations are locked until your email address is verified
+          </p>
+        </div>
+
+        <Card className="border-slate-200/80 shadow-md">
+          <CardHeader>
+            <CardTitle className="text-lg">Verification Email Sent</CardTitle>
+            <CardDescription>
+              We sent a signed verification link to{' '}
+              <strong className="text-slate-800 font-semibold">{user.email}</strong>. Please check
+              your inbox and click the link to activate your digital wallet.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Local dev helper note */}
+            <div className="p-3.5 bg-slate-100/80 border border-slate-200/80 rounded-xl text-xs text-slate-600 flex items-start gap-2.5">
+              <Terminal className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-slate-800 font-medium block">Local Development Note:</strong>
+                Emails are logged cleanly to <code className="text-emerald-700 font-mono">backend/storage/logs/laravel.log</code>. Check that file to click or copy the signed verification link!
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-col gap-2.5">
+              <Button
+                onClick={handleResend}
+                disabled={cooldown > 0}
+                isLoading={isResending}
+                variant="primary"
+                size="md"
+                className="w-full"
+                leftIcon={<RefreshCw className={`w-4 h-4 ${cooldown > 0 ? '' : ''}`} />}
+              >
+                {cooldown > 0 ? `Resend Available in ${cooldown}s` : 'Resend Verification Link'}
+              </Button>
+
+              <Link href="/dashboard" className="w-full">
+                <Button variant="outline" size="md" className="w-full" rightIcon={<ArrowRight className="w-4 h-4" />}>
+                  Check Status / Refresh
+                </Button>
+              </Link>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex items-center justify-center gap-1.5 text-xs text-slate-500 hover:text-rose-600 mt-2 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign in with a different account</span>
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
