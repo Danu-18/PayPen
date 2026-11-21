@@ -91,7 +91,8 @@ export interface DepositPayload {
 }
 
 export interface TransferPayload {
-  recipient_email: string;
+  recipient?: string;
+  recipient_email?: string;
   amount: number; // minor units
   mpin: string;
   note?: string;

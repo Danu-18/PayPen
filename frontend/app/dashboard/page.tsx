@@ -75,7 +75,7 @@ export default function DashboardPage() {
     {
       id: 'send',
       title: 'Send Money',
-      subtitle: 'Instant P2P transfer by email',
+      subtitle: 'Instant P2P transfer by Email or Wallet ID',
       href: '/send',
       icon: Send,
       color: 'bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100/80',

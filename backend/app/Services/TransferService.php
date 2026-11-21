@@ -21,12 +21,14 @@ class TransferService
 
     /**
      * Execute peer-to-peer transfer with integer 1.5% fee routing and MPIN authorization.
+     * Recipient can be specified via Email address or unique Wallet ID (e.g. PP-XXXXXXXX or XXXXXXXX).
      *
      * @param User $sender
-     * @param string $recipientEmail
+     * @param string $recipientIdentifier
      * @param int $amountMinor
      * @param string $mpin
      * @param string|null $note
+     * @param string|null $recipientEmail Optional alias for recipientIdentifier
      * @return Transaction
      *
      * @throws ValidationException
@@ -35,10 +37,11 @@ class TransferService
      */
     public function transfer(
         User $sender,
-        string $recipientEmail,
-        int $amountMinor,
-        string $mpin,
-        ?string $note = null
+        string $recipientIdentifier = '',
+        int $amountMinor = 0,
+        string $mpin = '',
+        ?string $note = null,
+        ?string $recipientEmail = null
     ): Transaction {
         // 1. Amount validation
         if ($amountMinor <= 0) {
@@ -60,23 +63,54 @@ class TransferService
         // 3. Verify MPIN authorization
         $this->mpinService->verify($sender, $mpin);
 
-        // 4. Recipient lookup & validation
-        $recipient = User::where('email', strtolower(trim($recipientEmail)))->first();
-        if (! $recipient) {
+        // 4. Recipient lookup & validation (supports Email OR Wallet ID)
+        $rawIdentifier = trim($recipientEmail ?: $recipientIdentifier);
+        if ($rawIdentifier === '') {
             throw ValidationException::withMessages([
-                'recipient_email' => ['No registered PayPen user found with that email address.'],
+                'recipient' => ['Recipient email address or Wallet ID is required.'],
+                'recipient_email' => ['Recipient email address or Wallet ID is required.'],
             ]);
         }
 
-        if ($recipient->id === $sender->id) {
+        $recipient = null;
+        $recipientWallet = null;
+
+        if (str_contains($rawIdentifier, '@')) {
+            // Recipient lookup by Email
+            $recipient = User::where('email', strtolower($rawIdentifier))->first();
+            if ($recipient) {
+                $recipientWallet = $recipient->wallet()->first();
+            }
+        } else {
+            // Recipient lookup by Wallet ID (accepts with or without 'PP-' prefix, case-insensitive)
+            $normalizedCode = strtoupper($rawIdentifier);
+            if (! str_starts_with($normalizedCode, 'PP-')) {
+                $normalizedCode = 'PP-' . $normalizedCode;
+            }
+
+            $recipientWallet = Wallet::where('wallet_code', $normalizedCode)->first();
+            if ($recipientWallet && $recipientWallet->user_id) {
+                $recipient = $recipientWallet->user;
+            }
+        }
+
+        if (! $recipient || ! $recipientWallet) {
             throw ValidationException::withMessages([
+                'recipient' => ['No registered PayPen user found with that email address or Wallet ID.'],
+                'recipient_email' => ['No registered PayPen user found with that email address or Wallet ID.'],
+            ]);
+        }
+
+        if ($recipient->id === $sender->id || $recipientWallet->id === $senderWallet->id) {
+            throw ValidationException::withMessages([
+                'recipient' => ['You cannot transfer funds to your own wallet.'],
                 'recipient_email' => ['You cannot transfer funds to your own wallet.'],
             ]);
         }
 
-        $recipientWallet = $recipient->wallet()->first();
-        if (! $recipientWallet || $recipientWallet->status === 'frozen') {
+        if ($recipientWallet->status === 'frozen') {
             throw ValidationException::withMessages([
+                'recipient' => ['Recipient wallet is not active or is temporarily frozen.'],
                 'recipient_email' => ['Recipient wallet is not active or is temporarily frozen.'],
             ]);
         }
@@ -160,6 +194,7 @@ class TransferService
                 'recipient_name' => $recipient->name,
                 'recipient_email' => $recipient->email,
                 'recipient_wallet_code' => $recipientWallet->wallet_code,
+                'recipient_identifier' => $rawIdentifier,
                 'note' => $note ? trim($note) : null,
                 'fee_percentage' => $feePercentage,
             ],

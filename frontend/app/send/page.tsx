@@ -25,6 +25,7 @@ import {
   AlertCircle,
   ShieldCheck,
   Receipt,
+  Wallet as WalletIcon,
 } from 'lucide-react';
 
 export default function SendPage() {
@@ -32,7 +33,7 @@ export default function SendPage() {
   const { user, wallet } = useAppSelector((state) => state.auth);
   const [transferApi, { isLoading }] = useTransferMutation();
 
-  const [recipientEmail, setRecipientEmail] = useState('');
+  const [recipient, setRecipient] = useState('');
   const [amountPkr, setAmountPkr] = useState('500');
   const [note, setNote] = useState('');
   const [mpin, setMpin] = useState('');
@@ -56,13 +57,20 @@ export default function SendPage() {
     e.preventDefault();
     setErrorBanner(null);
 
-    if (!recipientEmail || !recipientEmail.includes('@')) {
-      setErrorBanner('Please enter a valid recipient email address.');
+    const trimmedRecipient = recipient.trim();
+    if (!trimmedRecipient) {
+      setErrorBanner('Please enter a valid recipient email address or Wallet ID.');
       return;
     }
 
-    if (recipientEmail.toLowerCase() === user?.email.toLowerCase()) {
-      setErrorBanner('You cannot transfer funds to your own registered email address.');
+    const isSelfEmail = trimmedRecipient.toLowerCase() === user?.email.toLowerCase();
+    const isSelfWallet =
+      wallet?.wallet_code &&
+      (trimmedRecipient.toUpperCase() === wallet.wallet_code.toUpperCase() ||
+       trimmedRecipient.toUpperCase() === wallet.wallet_code.replace(/^PP-/, '').toUpperCase());
+
+    if (isSelfEmail || isSelfWallet) {
+      setErrorBanner('You cannot transfer funds to your own wallet.');
       return;
     }
 
@@ -104,7 +112,8 @@ export default function SendPage() {
     try {
       const res = await transferApi({
         data: {
-          recipient_email: recipientEmail.trim(),
+          recipient: recipient.trim(),
+          recipient_email: recipient.trim(),
           amount: amountMinor,
           mpin,
           note: note ? note.trim() : undefined,
@@ -136,7 +145,7 @@ export default function SendPage() {
                 <Badge variant="success">Instant PKR Settlement</Badge>
               </div>
               <p className="text-sm text-slate-500 mt-1">
-                Zero-delay wallet transfers to any registered PayPen user by email
+                Zero-delay wallet transfers to any registered PayPen user by Email or Wallet ID
               </p>
             </div>
 
@@ -179,21 +188,32 @@ export default function SendPage() {
                 <CardHeader>
                   <CardTitle className="text-lg">Transfer Details</CardTitle>
                   <CardDescription>
-                    Enter recipient credentials and payment amount
+                    Enter recipient credentials (Email or Wallet ID) and payment amount
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleOpenConfirm} className="space-y-5">
-                    {/* Recipient Email */}
-                    <Input
-                      label="Recipient Email Address"
-                      type="email"
-                      placeholder="recipient@example.com"
-                      value={recipientEmail}
-                      onChange={(e) => setRecipientEmail(e.target.value)}
-                      leftIcon={<Mail className="w-4 h-4 text-slate-400" />}
-                      required
-                    />
+                    {/* Recipient Email or Wallet ID */}
+                    <div>
+                      <Input
+                        label="Recipient (Email Address or Wallet ID)"
+                        type="text"
+                        placeholder="e.g. user@example.com or PP-0A91CCC1"
+                        value={recipient}
+                        onChange={(e) => setRecipient(e.target.value)}
+                        leftIcon={
+                          recipient.includes('@') ? (
+                            <Mail className="w-4 h-4 text-slate-400" />
+                          ) : (
+                            <WalletIcon className="w-4 h-4 text-slate-400" />
+                          )
+                        }
+                        required
+                      />
+                      <p className="text-[11px] text-slate-400 mt-1 pl-1">
+                        Enter recipient's registered email or their unique 8-character PayPen Wallet ID.
+                      </p>
+                    </div>
 
                     {/* Amount Input */}
                     <div>
@@ -338,7 +358,7 @@ export default function SendPage() {
             <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-2">
               <div className="flex justify-between">
                 <span className="text-slate-500">Recipient:</span>
-                <span className="font-semibold text-slate-800">{recipientEmail}</span>
+                <span className="font-semibold text-slate-800 font-mono">{recipient}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Transfer Amount:</span>

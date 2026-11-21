@@ -471,4 +471,93 @@ class Sprint2LedgerEngineTest extends TestCase
         // Token consumed
         $this->assertNull(DB::table('password_reset_tokens')->where('email', 'sender@paypen.test')->first());
     }
+
+    public function test_p2p_transfer_using_wallet_code_succeeds_and_balances_correctly(): void
+    {
+        // Deposit 5,000 PKR to sender
+        $this->actingAs($this->sender, 'sanctum')
+            ->withHeaders(['Idempotency-Key' => Str::uuid()->toString()])
+            ->postJson('/api/deposits', [
+                'amount' => 500000,
+                'card_number' => '4242424242424242',
+            ]);
+
+        $recipientWalletCode = $this->recipient->wallet->wallet_code;
+
+        // Send 100 PKR using recipient's Wallet ID
+        $response = $this->actingAs($this->sender, 'sanctum')
+            ->withHeaders(['Idempotency-Key' => Str::uuid()->toString()])
+            ->postJson('/api/transfers', [
+                'recipient' => $recipientWalletCode,
+                'amount' => 10000,
+                'mpin' => '1234',
+                'note' => 'Transfer via Wallet ID',
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJson([
+                'message' => 'P2P transfer completed successfully.',
+                'transaction' => [
+                    'amount' => 10000,
+                    'fee' => 150,
+                    'status' => 'completed',
+                ],
+            ]);
+
+        $this->assertEquals(10000, $this->recipient->wallet->fresh()->balance);
+        $this->assertEquals(0, Wallet::sum('balance'));
+    }
+
+    public function test_p2p_transfer_using_bare_wallet_code_without_prefix_succeeds(): void
+    {
+        // Deposit 5,000 PKR to sender
+        $this->actingAs($this->sender, 'sanctum')
+            ->withHeaders(['Idempotency-Key' => Str::uuid()->toString()])
+            ->postJson('/api/deposits', [
+                'amount' => 500000,
+                'card_number' => '4242424242424242',
+            ]);
+
+        // Strip 'PP-' prefix and test case-insensitivity
+        $bareCode = strtolower(str_replace('PP-', '', $this->recipient->wallet->wallet_code));
+
+        $response = $this->actingAs($this->sender, 'sanctum')
+            ->withHeaders(['Idempotency-Key' => Str::uuid()->toString()])
+            ->postJson('/api/transfers', [
+                'recipient' => $bareCode,
+                'amount' => 5000,
+                'mpin' => '1234',
+            ]);
+
+        $response->assertStatus(201);
+        $this->assertEquals(5000, $this->recipient->wallet->fresh()->balance);
+    }
+
+    public function test_transfer_to_own_wallet_code_is_prohibited(): void
+    {
+        $response = $this->actingAs($this->sender, 'sanctum')
+            ->withHeaders(['Idempotency-Key' => Str::uuid()->toString()])
+            ->postJson('/api/transfers', [
+                'recipient' => $this->sender->wallet->wallet_code,
+                'amount' => 1000,
+                'mpin' => '1234',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['recipient']);
+    }
+
+    public function test_transfer_to_invalid_wallet_code_returns_422(): void
+    {
+        $response = $this->actingAs($this->sender, 'sanctum')
+            ->withHeaders(['Idempotency-Key' => Str::uuid()->toString()])
+            ->postJson('/api/transfers', [
+                'recipient' => 'PP-NONEXISTENT',
+                'amount' => 1000,
+                'mpin' => '1234',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['recipient']);
+    }
 }

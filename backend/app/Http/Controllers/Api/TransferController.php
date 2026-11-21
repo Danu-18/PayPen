@@ -17,14 +17,14 @@ class TransferController extends Controller
     public function store(TransferRequest $request, TransferService $transferService): JsonResponse
     {
         $sender = $request->user();
-        $recipientEmail = (string) $request->input('recipient_email');
+        $recipientIdentifier = (string) ($request->input('recipient') ?: $request->input('recipient_email'));
         $amountMinor = (int) $request->input('amount');
         $mpin = (string) $request->input('mpin');
         $note = $request->input('note');
 
         $tx = $transferService->transfer(
             sender: $sender,
-            recipientEmail: $recipientEmail,
+            recipientIdentifier: $recipientIdentifier,
             amountMinor: $amountMinor,
             mpin: $mpin,
             note: $note
