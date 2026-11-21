@@ -36,8 +36,13 @@ export default function ForgotPasswordPage() {
       setSubmitted(true);
       toast.success('Password reset instructions dispatched.');
     } catch (err: unknown) {
-      const apiErr = err as { data?: { message?: string } };
-      toast.error(apiErr.data?.message || 'Failed to send reset link.');
+      const apiErr = err as { data?: { message?: string; errors?: Record<string, string[]> } };
+      const errorMessage =
+        apiErr.data?.errors?.email?.[0] ||
+        apiErr.data?.message ||
+        'No registered PayPen account found with this email address.';
+      setError(errorMessage);
+      toast.error(errorMessage);
     }
   };
 

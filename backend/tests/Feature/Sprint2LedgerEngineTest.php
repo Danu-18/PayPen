@@ -435,7 +435,13 @@ class Sprint2LedgerEngineTest extends TestCase
     {
         Mail::fake();
 
-        // 1. Request forgot password
+        // 0. Non-existent email returns 422
+        $this->postJson('/api/auth/forgot-password', [
+            'email' => 'nonexistent@paypen.test',
+        ])->assertStatus(422)
+          ->assertJsonValidationErrors(['email']);
+
+        // 1. Request forgot password for existing user
         $forgotRes = $this->postJson('/api/auth/forgot-password', [
             'email' => 'sender@paypen.test',
         ]);

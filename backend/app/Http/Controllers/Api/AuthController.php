@@ -226,37 +226,41 @@ class AuthController extends Controller
         $email = strtolower(trim($request->input('email')));
         $user = User::where('email', $email)->first();
 
-        if ($user) {
-            $token = Str::random(64);
-
-            DB::table('password_reset_tokens')->updateOrInsert(
-                ['email' => $email],
-                [
-                    'token' => Hash::make($token),
-                    'created_at' => now(),
-                ]
-            );
-
-            $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
-            $resetUrl = "{$frontendUrl}/reset-password?token={$token}&email=" . urlencode($email);
-
-            try {
-                Mail::to($user->email)->send(new ResetPasswordMail($user, $resetUrl));
-            } catch (\Throwable $e) {
-                // If mail service fails, log error but continue gracefully
-                \Illuminate\Support\Facades\Log::error("Failed sending reset email: " . $e->getMessage());
-            }
-
-            AuditLogService::record(
-                action: 'password_reset_requested',
-                actorUserId: $user->id,
-                targetType: User::class,
-                targetId: $user->id
-            );
+        if (! $user) {
+            throw ValidationException::withMessages([
+                'email' => ['No registered PayPen account found with this email address.'],
+            ]);
         }
 
+        $token = Str::random(64);
+
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $email],
+            [
+                'token' => Hash::make($token),
+                'created_at' => now(),
+            ]
+        );
+
+        $frontendUrl = env('FRONTEND_URL', 'http://localhost:3000');
+        $resetUrl = "{$frontendUrl}/reset-password?token={$token}&email=" . urlencode($email);
+
+        try {
+            Mail::to($user->email)->send(new ResetPasswordMail($user, $resetUrl));
+        } catch (\Throwable $e) {
+            // If mail service fails, log error but continue gracefully
+            \Illuminate\Support\Facades\Log::error("Failed sending reset email: " . $e->getMessage());
+        }
+
+        AuditLogService::record(
+            action: 'password_reset_requested',
+            actorUserId: $user->id,
+            targetType: User::class,
+            targetId: $user->id
+        );
+
         return response()->json([
-            'message' => 'If your email is registered with PayPen, you will receive a password reset link shortly.',
+            'message' => 'Password reset link has been dispatched to your email address.',
         ]);
     }
 
