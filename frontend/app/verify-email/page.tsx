@@ -82,12 +82,12 @@ export default function VerifyEmailPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Local dev helper note */}
-            <div className="p-3.5 bg-slate-100/80 border border-slate-200/80 rounded-xl text-xs text-slate-600 flex items-start gap-2.5">
-              <Terminal className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
+            {/* Email delivery note */}
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200/80 rounded-xl text-xs text-emerald-800 flex items-start gap-2.5">
+              <MailCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               <div>
-                <strong className="text-slate-800 font-medium block">Local Development Note:</strong>
-                Emails are logged cleanly to <code className="text-emerald-700 font-mono">backend/storage/logs/laravel.log</code>. Check that file to click or copy the signed verification link!
+                <strong className="text-emerald-950 font-medium block">Live Email Delivery Active:</strong>
+                Please check your inbox (and spam/junk folder). Click the signed link in the email to automatically activate your wallet.
               </div>
             </div>
 
